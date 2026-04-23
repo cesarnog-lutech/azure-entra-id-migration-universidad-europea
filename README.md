@@ -8,6 +8,16 @@ Repositorio de configuración y runbooks para la migración / federación entre 
 - [`docs/runbooks/tenants/`](docs/runbooks/tenants/) — Hojas de seguimiento por tenant.
   - [`live.uem.es.md`](docs/runbooks/tenants/live.uem.es.md) — Tenant en curso.
   - [`_TEMPLATE.md`](docs/runbooks/tenants/_TEMPLATE.md) — Plantilla para clonar a los próximos 2 tenants (TBD: CEG / UDI / Andorra / Portugal).
+- [`config/tenants/`](config/tenants/) — Fichero de variables por tenant (fuente única de verdad para scripts y runbook).
+  - [`live.uem.es.vars`](config/tenants/live.uem.es.vars)
+  - [`_TEMPLATE.vars`](config/tenants/_TEMPLATE.vars)
+- [`scripts/`](scripts/) — Automatización idempotente (dry-run por defecto) para los pasos mecánicos:
+  - [`scripts/common/validate_vars.py`](scripts/common/validate_vars.py) — validador offline de los ficheros de variables.
+  - [`scripts/google/01_create_ous_and_service_user.sh`](scripts/google/01_create_ous_and_service_user.sh) — GAM7.
+  - [`scripts/google/02_create_sso_profile.sh`](scripts/google/02_create_sso_profile.sh) — GAM7 (respeta `FREEZE_GOOGLE_SSO_TOGGLE`).
+  - [`scripts/entra/01_create_enterprise_app.ps1`](scripts/entra/01_create_enterprise_app.ps1) — Microsoft Graph PowerShell.
+  - [`scripts/entra/02_configure_saml.ps1`](scripts/entra/02_configure_saml.ps1) — SAML + claims + certificado.
+  - [`scripts/entra/03_configure_provisioning.ps1`](scripts/entra/03_configure_provisioning.ps1) — provisioning (respeta `FREEZE_ENTRA_PROVISIONING_START`).
 
 ## Convenciones
 

@@ -14,6 +14,59 @@
 
 ---
 
+## 0.0 Automatización disponible
+
+Este runbook está respaldado por scripts que ejecutan las partes *mecánicas* (crear OUs, instanciar la app de galería, aplicar la configuración SAML, cargar mappings, etc.) para reducir errores humanos. Hay tres bloques que **NO son automatizables** y siguen siendo manuales por diseño:
+
+- **Login interactivo con MFA** en Google Admin y en Entra ID (los scripts asumen una sesión ya autenticada: GAM7 para Google, `Connect-MgGraph` para Entra).
+- **Diálogo OAuth "Authorize"** del provisioning (hay que elegir la cuenta `Entra ID Conector` en el popup de Google y aceptar los scopes).
+- **Los toggles finales**: subir el switch de SSO en Google y pulsar *Start provisioning* en Entra. En la sesión actual esos dos pasos están **prohibidos** y los scripts se niegan a ejecutarlos mientras `FREEZE_*=true` en el fichero de variables.
+
+Ficheros:
+
+| Ruta | Qué hace |
+|---|---|
+| `config/tenants/<dominio>.vars` | Variables por tenant (fuente única de verdad). |
+| `config/tenants/_TEMPLATE.vars` | Plantilla para clonar a los dos tenants siguientes. |
+| `scripts/common/validate_vars.py` | Valida el fichero de variables antes de tocar nada. |
+| `scripts/common/load_vars.sh` | Carga + valida variables para los scripts bash. |
+| `scripts/google/01_create_ous_and_service_user.sh` | §1: OUs `/test SSO`, `/local_login`, `/Sync users` + usuario `Entra ID Conector`. |
+| `scripts/google/02_create_sso_profile.sh` | §2: perfil SSO `Entra ID` sin asignar, toggle OFF. |
+| `scripts/entra/01_create_enterprise_app.ps1` | §3.1: instancia `Google Cloud / G Suite Connector by Microsoft` desde la galería. |
+| `scripts/entra/02_configure_saml.ps1` | §3.2: SAML Basic, claims y descarga del certificado Base64. |
+| `scripts/entra/03_configure_provisioning.ps1` | §4: provisioning Automatic, mappings con `orgUnitPath`=Constant `/test SSO`, grupos OFF, **sin arrancar el job**. |
+
+Flujo recomendado para `live.uem.es`:
+
+```bash
+python3 scripts/common/validate_vars.py config/tenants/live.uem.es.vars
+
+DRY_RUN=1 bash scripts/google/01_create_ous_and_service_user.sh config/tenants/live.uem.es.vars
+DRY_RUN=0 bash scripts/google/01_create_ous_and_service_user.sh config/tenants/live.uem.es.vars
+
+DRY_RUN=1 bash scripts/google/02_create_sso_profile.sh config/tenants/live.uem.es.vars
+DRY_RUN=0 bash scripts/google/02_create_sso_profile.sh config/tenants/live.uem.es.vars
+
+pwsh -File scripts/entra/01_create_enterprise_app.ps1 \
+  -VarsFile config/tenants/live.uem.es.vars -WhatIf
+pwsh -File scripts/entra/01_create_enterprise_app.ps1 \
+  -VarsFile config/tenants/live.uem.es.vars
+
+pwsh -File scripts/entra/02_configure_saml.ps1 \
+  -VarsFile config/tenants/live.uem.es.vars \
+  -AppObjectId $env:ENTRA_APP_OBJECT_ID \
+  -ServicePrincipalId $env:ENTRA_SP_OBJECT_ID \
+  -AcsUrlFromGoogle '<ACS-URL-que-muestra-Google>' -WhatIf
+
+pwsh -File scripts/entra/03_configure_provisioning.ps1 \
+  -VarsFile config/tenants/live.uem.es.vars \
+  -ServicePrincipalId $env:ENTRA_SP_OBJECT_ID -WhatIf
+```
+
+Todos los scripts son idempotentes y soportan `DRY_RUN=1` / `-WhatIf`.
+
+---
+
 ## 0. Pre-requisitos (verificar antes de tocar consolas)
 
 - [ ] Acceso **Super Admin** a Google Admin Console del tenant `live.uem.es`.
