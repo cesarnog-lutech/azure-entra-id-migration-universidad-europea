@@ -16,7 +16,11 @@
 
 ## 0.0 Automatización disponible
 
-Este runbook está respaldado por scripts que ejecutan las partes *mecánicas* (crear OUs, instanciar la app de galería, aplicar la configuración SAML, cargar mappings, etc.) para reducir errores humanos. Hay tres bloques que **NO son automatizables** y siguen siendo manuales por diseño:
+Este runbook está respaldado por scripts que ejecutan las partes *mecánicas* (crear OUs, instanciar la app de galería, aplicar la configuración SAML, cargar mappings, etc.) para reducir errores humanos.
+
+Para ejecución **desatendida** (Cursor Cloud Agent o un host de CI), ver [`docs/AUTOMATION_CREDENTIALS.md`](AUTOMATION_CREDENTIALS.md): explica cómo crear la cuenta de servicio Google con Domain-Wide Delegation y la app registration de Entra ID con los scopes mínimos, y cómo cargarlas como secretos en Cursor. Una vez cargados, `scripts/run_all.sh` encadena todos los pasos automatizables.
+
+Hay tres bloques que **NO son automatizables** y siguen siendo manuales por diseño:
 
 - **Login interactivo con MFA** en Google Admin y en Entra ID (los scripts asumen una sesión ya autenticada: GAM7 para Google, `Connect-MgGraph` para Entra).
 - **Diálogo OAuth "Authorize"** del provisioning (hay que elegir la cuenta `Entra ID Conector` en el popup de Google y aceptar los scopes).

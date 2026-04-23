@@ -20,6 +20,7 @@ source "$HERE/../common/load_vars.sh" "${1:-}"
 
 DRY_RUN="${DRY_RUN:-1}"
 GAM_BIN="${GAM_BIN:-gam}"
+USE_SA="${USE_SA:-1}"
 
 run() {
   if [[ "$DRY_RUN" == "1" ]]; then
@@ -33,16 +34,21 @@ run() {
 echo "== Paso 1: OUs + usuario de servicio =="
 echo "   tenant  : $TENANT_PRIMARY_DOMAIN"
 echo "   DRY_RUN : $DRY_RUN"
+echo "   USE_SA  : $USE_SA"
 echo
 
 if [[ "$DRY_RUN" == "0" ]]; then
   if ! command -v "$GAM_BIN" >/dev/null 2>&1; then
-    echo "ERROR: GAM no disponible en PATH ('$GAM_BIN'). Instalar GAM7 y autenticar primero." >&2
+    echo "ERROR: GAM no disponible en PATH ('$GAM_BIN'). Instalar GAM7 primero." >&2
     exit 2
   fi
-  echo "[check] verificando que la cuenta GAM corresponde a $TENANT_PRIMARY_DOMAIN"
-  "$GAM_BIN" info domain | grep -i "$TENANT_PRIMARY_DOMAIN" >/dev/null || {
-    echo "ERROR: la cuenta autenticada en GAM no corresponde al dominio $TENANT_PRIMARY_DOMAIN. Abortando." >&2
+  if [[ "$USE_SA" == "1" && -z "${GAMCFGDIR:-}" ]]; then
+    # shellcheck disable=SC1091
+    source "$HERE/../common/bootstrap_gam_sa.sh" "${1:-}"
+  fi
+  echo "[check] verificando que GAM puede leer info del dominio $TENANT_PRIMARY_DOMAIN"
+  "$GAM_BIN" info domain 2>/dev/null | grep -i "$TENANT_PRIMARY_DOMAIN" >/dev/null || {
+    echo "ERROR: GAM no puede consultar el dominio $TENANT_PRIMARY_DOMAIN (auth o DWD insuficiente)." >&2
     exit 3
   }
 fi

@@ -21,6 +21,12 @@ source "$HERE/../common/load_vars.sh" "${1:-}"
 
 DRY_RUN="${DRY_RUN:-1}"
 GAM_BIN="${GAM_BIN:-gam}"
+USE_SA="${USE_SA:-1}"
+
+if [[ "$DRY_RUN" == "0" && "$USE_SA" == "1" && -z "${GAMCFGDIR:-}" ]]; then
+  # shellcheck disable=SC1091
+  source "$HERE/../common/bootstrap_gam_sa.sh" "${1:-}"
+fi
 
 AZURE_LOGIN_URL="${AZURE_LOGIN_URL:-}"
 AZURE_IDP_ENTITY_ID="${AZURE_IDP_ENTITY_ID:-}"
